@@ -1,21 +1,25 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ilox/ast_printer.dart';
-import 'package:ilox/expr.dart';
+//import 'package:ilox/ast_printer.dart';
+//import 'package:ilox/expr.dart';
+import 'package:ilox/interpreter.dart';
 import 'package:ilox/parser.dart';
 import 'package:ilox/scanner.dart';
 import 'package:ilox/token.dart';
 import 'package:ilox/token_type.dart';
 
 class Lox {
+  static final Interpreter interpreter = Interpreter();
   static bool hadError = false;
+  static bool hadRuntimeError = false;
 
   static void runFile(String path) async {
     var file = File(path);
     var bytes = await file.readAsString(encoding: Encoding.getByName('ascii'));
     run(bytes);
     if (hadError) exit(65);
+    if (hadRuntimeError) exit(70);
   }
 
   static void runPrompt() {
@@ -38,7 +42,8 @@ class Lox {
     // Stop if there was a syntax error.
     if (hadError) return;
 
-    print(AstPrinter().print(expression) + '\n');
+    //print(AstPrinter().print(expression) + '\n');
+    interpreter.interpret(expression);
   }
 
   static void error(int line, String message) {
@@ -56,5 +61,10 @@ class Lox {
     } else {
       report(token.line, " at '${token.lexeme}'", message);
     }
+  }
+
+  static void runtimeError(RuntimeError error) {
+    stderr.writeln('${error.message}\n[line ${error.token.line}]');
+    hadRuntimeError = true;
   }
 }
