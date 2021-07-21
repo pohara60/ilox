@@ -6,9 +6,10 @@ import 'package:ilox/token_type.dart';
 
 class Parser {
   final List<Token> tokens;
+  final bool repl;
   int current = 0;
 
-  Parser(this.tokens);
+  Parser(this.tokens, this.repl);
 
   bool match(List<TokenType> types) {
     for (var type in types) {
@@ -93,6 +94,10 @@ class Parser {
 
   Stmt expressionStatement() {
     var expr = expression();
+    if (repl && isAtEnd()) {
+      // REPL should print expressions automatically
+      return Print(expr);
+    }
     consume(TokenType.SEMICOLON, "Expect ';' after expression.");
     return Expression(expr);
   }

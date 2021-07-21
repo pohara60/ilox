@@ -27,16 +27,16 @@ class Lox {
       print('> ');
       var line = stdin.readLineSync(encoding: Encoding.getByName('ascii'));
       if (line == null) break;
-      run(line);
+      run(line, repl: true);
       hadError = false;
     }
   }
 
-  static void run(String source) {
+  static void run(String source, {bool repl = false}) {
     var scanner = Scanner(source);
     var tokens = scanner.scanTokens();
 
-    var parser = Parser(tokens);
+    var parser = Parser(tokens, repl);
     var statements = parser.parse();
 
     // Stop if there was a syntax error.
