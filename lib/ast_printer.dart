@@ -74,6 +74,25 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     return buffer.toString();
   }
 
+  String parenthesizeIfStmt(String name, Expr condition, Stmt thenStatement,
+      [Stmt elseStatement]) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(condition.accept(this));
+    buffer.write(' ');
+    buffer.write(thenStatement.accept(this));
+    if (elseStatement != null) {
+      buffer.write(' ');
+      buffer.write(elseStatement.accept(this));
+    }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
   @override
   String visitExpressionStmt(Expression stmt) {
     return parenthesize('expression', stmt.expression);
@@ -102,5 +121,21 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
   @override
   String visitBlockStmt(Block stmt) {
     return parenthesizeStmts('block', stmt.statements);
+  }
+
+  @override
+  String visitIfStmt(If stmt) {
+    return parenthesizeIfStmt(
+        'if', stmt.condition, stmt.thenBranch, stmt.elseBranch);
+  }
+
+  @override
+  String visitLogicalExpr(Logical expr) {
+    return parenthesize(expr.operator.lexeme, expr.left, expr.right);
+  }
+
+  @override
+  String visitWhileStmt(While stmt) {
+    return parenthesizeIfStmt('while', stmt.condition, stmt.body);
   }
 }

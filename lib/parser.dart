@@ -73,6 +73,9 @@ class Parser {
 
   Stmt statement() {
     if (match([TokenType.PRINT])) return printStatement();
+    if (match([TokenType.IF])) return ifStatement();
+    if (match([TokenType.WHILE])) return whileStatement();
+    if (match([TokenType.FOR])) return forStatement();
     if (match([TokenType.LEFT_BRACE])) return Block(block());
     return expressionStatement();
   }
@@ -81,6 +84,62 @@ class Parser {
     var value = expression();
     consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return Print(value);
+  }
+
+  Stmt ifStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+    var condition = expression();
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+    var thenBranch = statement();
+    Stmt elseBranch;
+    if (match([TokenType.ELSE])) {
+      elseBranch = statement();
+    }
+    return If(condition, thenBranch, elseBranch);
+  }
+
+  Stmt whileStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
+    var condition = expression();
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
+    var body = statement();
+    return While(condition, body);
+  }
+
+  Stmt forStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+    Stmt initializer;
+    if (match([TokenType.SEMICOLON])) {
+      initializer = null;
+    } else if (match([TokenType.VAR])) {
+      initializer = varDeclaration();
+    } else {
+      initializer = expressionStatement();
+    }
+    Expr condition;
+    if (!check(TokenType.SEMICOLON)) {
+      condition = expression();
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
+    Expr increment;
+    if (!check(TokenType.RIGHT_PAREN)) {
+      increment = expression();
+    }
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+    var body = statement();
+
+    // Desugaring - construct while statement to implement for statement
+    if (increment != null) {
+      body = Block([
+        body,
+        Expression(increment),
+      ]);
+      body = While(condition ?? Literal(true), body);
+    }
+    if (initializer != null) {
+      body = Block([initializer, body]);
+    }
+    return body;
   }
 
   List<Stmt> block() {
@@ -107,7 +166,7 @@ class Parser {
   }
 
   Expr assignment() {
-    var expr = equality();
+    var expr = or();
     if (match([TokenType.EQUAL])) {
       var equals = previous();
       var value = assignment();
@@ -116,6 +175,26 @@ class Parser {
         return Assign(name, value);
       }
       error(equals, 'Invalid assignment target.');
+    }
+    return expr;
+  }
+
+  Expr or() {
+    var expr = and();
+    while (match([TokenType.OR])) {
+      var operator = previous();
+      var right = and();
+      expr = Logical(expr, operator, right);
+    }
+    return expr;
+  }
+
+  Expr and() {
+    var expr = equality();
+    while (match([TokenType.AND])) {
+      var operator = previous();
+      var right = equality();
+      expr = Logical(expr, operator, right);
     }
     return expr;
   }

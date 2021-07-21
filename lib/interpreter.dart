@@ -197,6 +197,33 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
       this.environment = previous;
     }
   }
+
+  @override
+  void visitIfStmt(If stmt) {
+    if (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.thenBranch);
+    } else if (stmt.elseBranch != null) {
+      execute(stmt.elseBranch);
+    }
+  }
+
+  @override
+  Object visitLogicalExpr(Logical expr) {
+    var left = evaluate(expr.left);
+    if (expr.operator.type == TokenType.OR) {
+      if (isTruthy(left)) return left;
+    } else {
+      if (!isTruthy(left)) return left;
+    }
+    return evaluate(expr.right);
+  }
+
+  @override
+  void visitWhileStmt(While stmt) {
+    while (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.body);
+    }
+  }
 }
 
 class RuntimeError implements Exception {

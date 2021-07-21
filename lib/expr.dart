@@ -7,6 +7,7 @@ abstract class Expr {
 abstract class ExprVisitor<T> {
   T visitAssignExpr(Assign expr);
   T visitBinaryExpr(Binary expr);
+  T visitLogicalExpr(Logical expr);
   T visitGroupingExpr(Grouping expr);
   T visitLiteralExpr(Literal expr);
   T visitUnaryExpr(Unary expr);
@@ -40,6 +41,22 @@ class Binary extends Expr {
   @override
   T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitBinaryExpr(this);
+  }
+}
+
+class Logical extends Expr {
+  Logical (
+    this.left,
+    this.operator,
+    this.right,
+  );
+  final Expr left;
+  final Token operator;
+  final Expr right;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitLogicalExpr(this);
   }
 }
 
