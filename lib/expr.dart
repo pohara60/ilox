@@ -1,14 +1,30 @@
 import 'package:ilox/token.dart';
 
 abstract class Expr {
-  T accept<T>(Visitor<T> visitor);
+  T accept<T>(ExprVisitor<T> visitor);
 }
 
-abstract class Visitor<T> {
+abstract class ExprVisitor<T> {
+  T visitAssignExpr(Assign expr);
   T visitBinaryExpr(Binary expr);
   T visitGroupingExpr(Grouping expr);
   T visitLiteralExpr(Literal expr);
   T visitUnaryExpr(Unary expr);
+  T visitVariableExpr(Variable expr);
+}
+
+class Assign extends Expr {
+  Assign (
+    this.name,
+    this.value,
+  );
+  final Token name;
+  final Expr value;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitAssignExpr(this);
+  }
 }
 
 class Binary extends Expr {
@@ -22,7 +38,7 @@ class Binary extends Expr {
   final Expr right;
 
   @override
-  T accept<T>(Visitor<T> visitor) {
+  T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitBinaryExpr(this);
   }
 }
@@ -34,7 +50,7 @@ class Grouping extends Expr {
   final Expr expression;
 
   @override
-  T accept<T>(Visitor<T> visitor) {
+  T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitGroupingExpr(this);
   }
 }
@@ -46,7 +62,7 @@ class Literal extends Expr {
   final Object value;
 
   @override
-  T accept<T>(Visitor<T> visitor) {
+  T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitLiteralExpr(this);
   }
 }
@@ -60,7 +76,19 @@ class Unary extends Expr {
   final Expr right;
 
   @override
-  T accept<T>(Visitor<T> visitor) {
+  T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitUnaryExpr(this);
+  }
+}
+
+class Variable extends Expr {
+  Variable (
+    this.name,
+  );
+  final Token name;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitVariableExpr(this);
   }
 }

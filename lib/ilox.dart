@@ -37,13 +37,13 @@ class Lox {
     var tokens = scanner.scanTokens();
 
     var parser = Parser(tokens);
-    var expression = parser.parse();
+    var statements = parser.parse();
 
     // Stop if there was a syntax error.
     if (hadError) return;
 
-    //print(AstPrinter().print(expression) + '\n');
-    interpreter.interpret(expression);
+    //print(AstPrinter().print(expression));
+    interpreter.interpret(statements);
   }
 
   static void error(int line, String message) {

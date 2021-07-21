@@ -1,5 +1,6 @@
 import 'package:ilox/expr.dart';
 import 'package:ilox/ilox.dart';
+import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 import 'package:ilox/token_type.dart';
 
@@ -41,16 +42,77 @@ class Parser {
     return tokens[current - 1];
   }
 
-  Expr parse() {
+  List<Stmt> parse() {
+    var statements = <Stmt>[];
+    while (!isAtEnd()) {
+      statements.add(declaration());
+    }
+    return statements;
+  }
+
+  Stmt declaration() {
     try {
-      return expression();
+      if (match([TokenType.VAR])) return varDeclaration();
+      return statement();
     } on ParseError {
+      synchronize();
       return null;
     }
   }
 
+  Stmt varDeclaration() {
+    var name = consume(TokenType.IDENTIFIER, 'Expect variable name.');
+    Expr initializer;
+    if (match([TokenType.EQUAL])) {
+      initializer = expression();
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+    return Var(name, initializer);
+  }
+
+  Stmt statement() {
+    if (match([TokenType.PRINT])) return printStatement();
+    if (match([TokenType.LEFT_BRACE])) return Block(block());
+    return expressionStatement();
+  }
+
+  Stmt printStatement() {
+    var value = expression();
+    consume(TokenType.SEMICOLON, "Expect ';' after value.");
+    return Print(value);
+  }
+
+  List<Stmt> block() {
+    var statements = <Stmt>[];
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+      statements.add(declaration());
+    }
+    consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
+  }
+
+  Stmt expressionStatement() {
+    var expr = expression();
+    consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+    return Expression(expr);
+  }
+
   Expr expression() {
-    return equality();
+    return assignment();
+  }
+
+  Expr assignment() {
+    var expr = equality();
+    if (match([TokenType.EQUAL])) {
+      var equals = previous();
+      var value = assignment();
+      if (expr is Variable) {
+        var name = expr.name;
+        return Assign(name, value);
+      }
+      error(equals, 'Invalid assignment target.');
+    }
+    return expr;
   }
 
   Expr equality() {
@@ -114,6 +176,10 @@ class Parser {
 
     if (match([TokenType.NUMBER, TokenType.STRING])) {
       return Literal(previous().literal);
+    }
+
+    if (match([TokenType.IDENTIFIER])) {
+      return Variable(previous());
     }
 
     if (match([TokenType.LEFT_PAREN])) {

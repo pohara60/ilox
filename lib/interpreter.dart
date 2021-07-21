@@ -1,17 +1,26 @@
 import 'package:ilox/expr.dart';
+import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 import 'package:ilox/token_type.dart';
 
+import 'environment.dart';
 import 'ilox.dart';
 
-class Interpreter implements Visitor<Object> {
-  void interpret(Expr expression) {
+class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
+  Environment environment = Environment();
+
+  void interpret(List<Stmt> statements) {
     try {
-      var value = evaluate(expression);
-      print(stringify(value));
+      for (var statement in statements) {
+        execute(statement);
+      }
     } on RuntimeError catch (error) {
       Lox.runtimeError(error);
     }
+  }
+
+  void execute(Stmt stmt) {
+    stmt.accept(this);
   }
 
   Object evaluate(Expr expr) {
@@ -137,6 +146,56 @@ class Interpreter implements Visitor<Object> {
       return text;
     }
     return object.toString();
+  }
+
+  @override
+  void visitExpressionStmt(Expression stmt) {
+    evaluate(stmt.expression);
+  }
+
+  @override
+  void visitPrintStmt(Print stmt) {
+    var value = evaluate(stmt.expression);
+    print(stringify(value));
+  }
+
+  @override
+  void visitVarStmt(Var stmt) {
+    Object value;
+    if (stmt.initializer != null) {
+      value = evaluate(stmt.initializer);
+    }
+    environment.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  @override
+  Object visitVariableExpr(Variable expr) {
+    return environment.get(expr.name);
+  }
+
+  @override
+  Object visitAssignExpr(Assign expr) {
+    var value = evaluate(expr.value);
+    environment.assign(expr.name, value);
+    return value;
+  }
+
+  @override
+  void visitBlockStmt(Block stmt) {
+    executeBlock(stmt.statements, Environment(environment));
+  }
+
+  void executeBlock(List<Stmt> statements, Environment environment) {
+    var previous = this.environment;
+    try {
+      this.environment = environment;
+      for (var statement in statements) {
+        execute(statement);
+      }
+    } finally {
+      this.environment = previous;
+    }
   }
 }
 

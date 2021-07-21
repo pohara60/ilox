@@ -8,10 +8,19 @@ void main(List<String> args) {
   var outputDir = args[0];
 
   defineAst(outputDir, 'Expr', [
+    'Assign   : Token name, Expr value',
     'Binary   : Expr left, Token operator, Expr right',
     'Grouping : Expr expression',
     'Literal  : Object value',
-    'Unary    : Token operator, Expr right'
+    'Unary    : Token operator, Expr right',
+    'Variable : Token name'
+  ]);
+
+  defineAst(outputDir, 'Stmt', [
+    'Block      : List<Stmt> statements',
+    'Expression : Expr expression',
+    'Print      : Expr expression',
+    'Var        : Token name, Expr initializer',
   ]);
 }
 
@@ -20,10 +29,13 @@ void defineAst(String outputDir, String baseName, List<String> types) {
   var file = File(path);
   var output = StringBuffer();
 
+  if (baseName != 'Expr') {
+    output.writeln("import 'package:ilox/expr.dart';");
+  }
   output.writeln("import 'package:ilox/token.dart';");
   output.writeln();
   output.writeln('abstract class $baseName {');
-  output.writeln('  T accept<T>(Visitor<T> visitor);');
+  output.writeln('  T accept<T>(${baseName}Visitor<T> visitor);');
   output.writeln('}');
   output.writeln();
   defineVisitor(output, baseName, types);
@@ -59,7 +71,7 @@ void defineType(
 
   output.writeln('');
   output.writeln('  @override');
-  output.writeln('  T accept<T>(Visitor<T> visitor) {');
+  output.writeln('  T accept<T>(${baseName}Visitor<T> visitor) {');
   output.writeln('    return visitor.visit$className$baseName(this);');
   output.writeln('  }');
 
@@ -67,7 +79,7 @@ void defineType(
 }
 
 void defineVisitor(StringBuffer output, String baseName, List<String> types) {
-  output.writeln('abstract class Visitor<T> {');
+  output.writeln('abstract class ${baseName}Visitor<T> {');
 
   for (var type in types) {
     var typeName = type.split(':')[0].trim();

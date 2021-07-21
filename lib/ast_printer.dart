@@ -1,6 +1,8 @@
 import 'package:ilox/expr.dart';
+import 'package:ilox/stmt.dart';
+import 'package:ilox/token.dart';
 
-class AstPrinter implements Visitor<String> {
+class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
   String print(Expr expr) {
     return expr.accept(this);
   }
@@ -40,5 +42,65 @@ class AstPrinter implements Visitor<String> {
     buffer.write(')');
 
     return buffer.toString();
+  }
+
+  String parenthesizeVar(String name, Token token, [Expr expr]) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(token.lexeme);
+    if (expr != null) {
+      buffer.write(' ');
+      buffer.write(expr.accept(this));
+    }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  String parenthesizeStmts(String name, List<Stmt> statements) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    for (var statement in statements) {
+      buffer.write(' ');
+      buffer.write(statement.accept(this));
+    }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  @override
+  String visitExpressionStmt(Expression stmt) {
+    return parenthesize('expression', stmt.expression);
+  }
+
+  @override
+  String visitPrintStmt(Print stmt) {
+    return parenthesize('print', stmt.expression);
+  }
+
+  @override
+  String visitVarStmt(Var stmt) {
+    return parenthesizeVar('var', stmt.name, stmt.initializer);
+  }
+
+  @override
+  String visitVariableExpr(Variable expr) {
+    return parenthesizeVar('var', expr.name);
+  }
+
+  @override
+  String visitAssignExpr(Assign expr) {
+    return parenthesizeVar('assign', expr.name, expr.value);
+  }
+
+  @override
+  String visitBlockStmt(Block stmt) {
+    return parenthesizeStmts('block', stmt.statements);
   }
 }
