@@ -51,7 +51,7 @@ class Lox {
   }
 
   static void report(int line, String where, String message) {
-    stderr.write('[line ${line.toString()}] Error$where: $message');
+    stderr.writeln('[line ${line.toString()}] Error$where: $message');
     hadError = true;
   }
 

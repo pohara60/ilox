@@ -1,13 +1,24 @@
+import 'package:ilox/builtins.dart';
 import 'package:ilox/expr.dart';
+import 'package:ilox/environment.dart';
+import 'package:ilox/ilox.dart';
+import 'package:ilox/lox_callable.dart';
+import 'package:ilox/lox_function.dart';
+import 'package:ilox/return.dart';
 import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 import 'package:ilox/token_type.dart';
 
-import 'environment.dart';
-import 'ilox.dart';
-
 class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
-  Environment environment = Environment();
+  final Environment globals;
+  Environment environment;
+  bool isBreak = false;
+  bool isContinue = false;
+
+  Interpreter() : globals = Environment() {
+    defineBuiltins(globals);
+    environment = globals;
+  }
 
   void interpret(List<Stmt> statements) {
     try {
@@ -192,6 +203,7 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
       this.environment = environment;
       for (var statement in statements) {
         execute(statement);
+        if (isBreak || isContinue) break;
       }
     } finally {
       this.environment = previous;
@@ -220,9 +232,53 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
 
   @override
   void visitWhileStmt(While stmt) {
-    while (isTruthy(evaluate(stmt.condition))) {
+    while (isTruthy(evaluate(stmt.condition)) && !isBreak) {
       execute(stmt.body);
+      isContinue = false;
     }
+    isBreak = false;
+  }
+
+  @override
+  void visitBreakStmt(Break stmt) {
+    isBreak = true;
+  }
+
+  @override
+  void visitContinueStmt(Continue stmt) {
+    isContinue = true;
+  }
+
+  @override
+  Object visitCallExpr(Call expr) {
+    var callee = evaluate(expr.callee);
+    var arguments = <Object>[];
+    for (var argument in expr.arguments) {
+      arguments.add(evaluate(argument));
+    }
+    if (callee is! LoxCallable) {
+      throw RuntimeError(expr.paren, 'Can only call functions and classes.');
+    }
+    var function = callee as LoxCallable;
+    if (arguments.length != function.arity()) {
+      throw RuntimeError(expr.paren,
+          'Expected ${function.arity()} arguments but got ${arguments.length}.');
+    }
+    return function.call(this, arguments);
+  }
+
+  @override
+  void visitFuncStmt(Func stmt) {
+    var function = LoxFunction(stmt, environment);
+    environment.define(stmt.name.lexeme, function);
+    return null;
+  }
+
+  @override
+  void visitReturnStmt(Return stmt) {
+    Object value;
+    if (stmt.value != null) value = evaluate(stmt.value);
+    throw ReturnException(value);
   }
 }
 

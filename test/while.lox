@@ -1,0 +1,18 @@
+var a = 0;
+var b = 0;
+while (true) {
+    a = a+1;
+    if (a > 6) break;
+    print "a="+a;
+    b = b+1;
+    if (b > 3) continue;
+    print "b="+b;
+    var c = 0;
+    while (true) {
+        c = c+1;
+        if (c > 2) break;
+        print "c="+c;
+    }
+}
+//break;
+//continue;

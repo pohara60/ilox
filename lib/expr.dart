@@ -11,6 +11,7 @@ abstract class ExprVisitor<T> {
   T visitGroupingExpr(Grouping expr);
   T visitLiteralExpr(Literal expr);
   T visitUnaryExpr(Unary expr);
+  T visitCallExpr(Call expr);
   T visitVariableExpr(Variable expr);
 }
 
@@ -95,6 +96,22 @@ class Unary extends Expr {
   @override
   T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitUnaryExpr(this);
+  }
+}
+
+class Call extends Expr {
+  Call (
+    this.callee,
+    this.paren,
+    this.arguments,
+  );
+  final Expr callee;
+  final Token paren;
+  final List<Expr> arguments;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitCallExpr(this);
   }
 }
 

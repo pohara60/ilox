@@ -9,9 +9,13 @@ abstract class StmtVisitor<T> {
   T visitBlockStmt(Block stmt);
   T visitIfStmt(If stmt);
   T visitWhileStmt(While stmt);
+  T visitBreakStmt(Break stmt);
+  T visitContinueStmt(Continue stmt);
   T visitExpressionStmt(Expression stmt);
   T visitPrintStmt(Print stmt);
   T visitVarStmt(Var stmt);
+  T visitFuncStmt(Func stmt);
+  T visitReturnStmt(Return stmt);
 }
 
 class Block extends Stmt {
@@ -56,6 +60,26 @@ class While extends Stmt {
   }
 }
 
+class Break extends Stmt {
+  Break (
+  );
+
+  @override
+  T accept<T>(StmtVisitor<T> visitor) {
+    return visitor.visitBreakStmt(this);
+  }
+}
+
+class Continue extends Stmt {
+  Continue (
+  );
+
+  @override
+  T accept<T>(StmtVisitor<T> visitor) {
+    return visitor.visitContinueStmt(this);
+  }
+}
+
 class Expression extends Stmt {
   Expression (
     this.expression,
@@ -91,5 +115,35 @@ class Var extends Stmt {
   @override
   T accept<T>(StmtVisitor<T> visitor) {
     return visitor.visitVarStmt(this);
+  }
+}
+
+class Func extends Stmt {
+  Func (
+    this.name,
+    this.params,
+    this.body,
+  );
+  final Token name;
+  final List<Token> params;
+  final List<Stmt> body;
+
+  @override
+  T accept<T>(StmtVisitor<T> visitor) {
+    return visitor.visitFuncStmt(this);
+  }
+}
+
+class Return extends Stmt {
+  Return (
+    this.keyword,
+    this.value,
+  );
+  final Token keyword;
+  final Expr value;
+
+  @override
+  T accept<T>(StmtVisitor<T> visitor) {
+    return visitor.visitReturnStmt(this);
   }
 }

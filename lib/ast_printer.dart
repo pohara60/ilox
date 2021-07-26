@@ -28,13 +28,15 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     return parenthesize(expr.operator.lexeme, expr.right);
   }
 
-  String parenthesize(String name, Expr expr, [Expr expr2]) {
+  String parenthesize(String name, [Expr expr, Expr expr2]) {
     var buffer = StringBuffer();
 
     buffer.write('(');
     buffer.write(name);
-    buffer.write(' ');
-    buffer.write(expr.accept(this));
+    if (expr2 != null) {
+      buffer.write(' ');
+      buffer.write(expr.accept(this));
+    }
     if (expr2 != null) {
       buffer.write(' ');
       buffer.write(expr2.accept(this));
@@ -55,6 +57,26 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
       buffer.write(' ');
       buffer.write(expr.accept(this));
     }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  String parenthesizeFun(
+      String name, Token token, List<Token> params, List<Stmt> body) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(token.lexeme);
+    buffer.write(' ( ');
+    for (var param in params) {
+      buffer.write(' ');
+      buffer.write(param.lexeme);
+    }
+    buffer.write(' ) ');
+    parenthesizeStmts('body', body);
     buffer.write(')');
 
     return buffer.toString();
@@ -88,6 +110,24 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
       buffer.write(' ');
       buffer.write(elseStatement.accept(this));
     }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  String parenthesizeCall(String name, Expr callee, List<Expr> arguments) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(callee.accept(this));
+    buffer.write(' ( ');
+    for (var argument in arguments) {
+      buffer.write(' ');
+      buffer.write(argument.accept(this));
+    }
+    buffer.write(' ) ');
     buffer.write(')');
 
     return buffer.toString();
@@ -137,5 +177,30 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
   @override
   String visitWhileStmt(While stmt) {
     return parenthesizeIfStmt('while', stmt.condition, stmt.body);
+  }
+
+  @override
+  String visitBreakStmt(Break stmt) {
+    return parenthesize('break');
+  }
+
+  @override
+  String visitContinueStmt(Continue stmt) {
+    return parenthesize('continue');
+  }
+
+  @override
+  String visitCallExpr(Call expr) {
+    return parenthesizeCall('call', expr.callee, expr.arguments);
+  }
+
+  @override
+  String visitFuncStmt(Func stmt) {
+    return parenthesizeFun('fun', stmt.name, stmt.params, stmt.body);
+  }
+
+  @override
+  String visitReturnStmt(Return stmt) {
+    return parenthesize(stmt.keyword.lexeme, stmt.value);
   }
 }

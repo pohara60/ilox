@@ -8,6 +8,7 @@ class Parser {
   final List<Token> tokens;
   final bool repl;
   int current = 0;
+  int loopDepth = 0;
 
   Parser(this.tokens, this.repl);
 
@@ -54,6 +55,7 @@ class Parser {
   Stmt declaration() {
     try {
       if (match([TokenType.VAR])) return varDeclaration();
+      if (match([TokenType.FUN])) return function('function');
       return statement();
     } on ParseError {
       synchronize();
@@ -71,10 +73,31 @@ class Parser {
     return Var(name, initializer);
   }
 
+  Func function(String kind) {
+    var name = consume(TokenType.IDENTIFIER, 'Expect $kind name.');
+    consume(TokenType.LEFT_PAREN, "Expect '(' after $kind name.");
+    var parameters = <Token>[];
+    if (!check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (parameters.length >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
+        parameters.add(consume(TokenType.IDENTIFIER, 'Expect parameter name.'));
+      } while (match([TokenType.COMMA]));
+    }
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(TokenType.LEFT_BRACE, "Expect '{' before $kind body.");
+    var body = block();
+    return Func(name, parameters, body);
+  }
+
   Stmt statement() {
     if (match([TokenType.PRINT])) return printStatement();
+    if (match([TokenType.RETURN])) return returnStatement();
     if (match([TokenType.IF])) return ifStatement();
     if (match([TokenType.WHILE])) return whileStatement();
+    if (match([TokenType.BREAK])) return breakStatement();
+    if (match([TokenType.CONTINUE])) return continueStatement();
     if (match([TokenType.FOR])) return forStatement();
     if (match([TokenType.LEFT_BRACE])) return Block(block());
     return expressionStatement();
@@ -84,6 +107,16 @@ class Parser {
     var value = expression();
     consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return Print(value);
+  }
+
+  Stmt returnStatement() {
+    var keyword = previous();
+    Expr value;
+    if (!check(TokenType.SEMICOLON)) {
+      value = expression();
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after return value.");
+    return Return(keyword, value);
   }
 
   Stmt ifStatement() {
@@ -99,14 +132,33 @@ class Parser {
   }
 
   Stmt whileStatement() {
+    loopDepth++;
     consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
     var condition = expression();
     consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
     var body = statement();
+    loopDepth--;
     return While(condition, body);
   }
 
+  Stmt breakStatement() {
+    if (loopDepth == 0) {
+      throw error(previous(), 'Break can only appear in while/for block.');
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after break.");
+    return Break();
+  }
+
+  Stmt continueStatement() {
+    if (loopDepth == 0) {
+      throw error(previous(), 'Continue can only appear in while/for block.');
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after continue.");
+    return Continue();
+  }
+
   Stmt forStatement() {
+    loopDepth++;
     consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
     Stmt initializer;
     if (match([TokenType.SEMICOLON])) {
@@ -127,6 +179,7 @@ class Parser {
     }
     consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
     var body = statement();
+    loopDepth--;
 
     // Desugaring - construct while statement to implement for statement
     if (increment != null) {
@@ -250,7 +303,37 @@ class Parser {
       var right = unary();
       return Unary(operator, right);
     }
-    return primary();
+    return call();
+  }
+
+  Expr call() {
+    var expr = primary();
+    while (true) {
+      if (match([TokenType.LEFT_PAREN])) {
+        expr = finishCall(expr);
+      } else {
+        break;
+      }
+    }
+    return expr;
+  }
+
+  Expr finishCall(Expr callee) {
+    var arguments = <Expr>[];
+    if (!check(TokenType.RIGHT_PAREN)) {
+      var tooMany = false;
+      do {
+        if (arguments.length >= 255) {
+          if (!tooMany) {
+            error(peek(), "Can't have more than 255 arguments.");
+          }
+          tooMany = true;
+        }
+        arguments.add(expression());
+      } while (match([TokenType.COMMA]));
+    }
+    var paren = consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+    return Call(callee, paren, arguments);
   }
 
   Expr primary() {

@@ -14,6 +14,7 @@ void main(List<String> args) {
     'Grouping : Expr expression',
     'Literal  : Object value',
     'Unary    : Token operator, Expr right',
+    'Call     : Expr callee, Token paren, List<Expr> arguments',
     'Variable : Token name'
   ]);
 
@@ -21,9 +22,13 @@ void main(List<String> args) {
     'Block      : List<Stmt> statements',
     'If         : Expr condition, Stmt thenBranch, Stmt elseBranch',
     'While      : Expr condition, Stmt body',
+    'Break      : ',
+    'Continue   : ',
     'Expression : Expr expression',
     'Print      : Expr expression',
     'Var        : Token name, Expr initializer',
+    'Func       : Token name, List<Token> params, List<Stmt> body',
+    'Return     : Token keyword, Expr value',
   ]);
 }
 
@@ -61,15 +66,19 @@ void defineType(
   // Store parameters in fields.
   var fields = fieldList.split(', ');
   for (var field in fields) {
-    var name = field.split(' ')[1];
-    output.writeln('    this.$name,');
+    if (field.isNotEmpty) {
+      var name = field.split(' ')[1];
+      output.writeln('    this.$name,');
+    }
   }
 
   output.writeln('  );');
 
   // Fields.
   for (var field in fields) {
-    output.writeln('  final ' + field + ';');
+    if (field.isNotEmpty) {
+      output.writeln('  final ' + field + ';');
+    }
   }
 
   output.writeln('');
