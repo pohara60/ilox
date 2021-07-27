@@ -5,10 +5,17 @@ import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 
 enum FunctionType { NONE, FUNCTION }
+enum LocalState { DEFINED, DECLARED, USED }
+
+class Local {
+  final Token name;
+  LocalState state;
+  Local(this.name, this.state);
+}
 
 class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   final Interpreter interpreter;
-  final List<Map<String, bool>> scopes = <Map<String, bool>>[];
+  final scopes = <Map<String, Local>>[];
   FunctionType currentFunction = FunctionType.NONE;
 
   Resolver(this.interpreter);
@@ -27,13 +34,14 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     expr.accept(this);
   }
 
-  void resolveLocal(Expr expr, Token name) {
+  Map<String, Local> resolveLocal(Expr expr, Token name) {
     for (var i = scopes.length - 1; i >= 0; i--) {
       if (scopes[i].containsKey(name.lexeme)) {
         interpreter.resolve(expr, scopes.length - 1 - i);
-        return;
+        return scopes[i];
       }
     }
+    return null;
   }
 
   void resolveFunction(List<Token> params, List<Stmt> body, FunctionType type) {
@@ -50,10 +58,16 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   }
 
   void beginScope() {
-    scopes.add(<String, bool>{});
+    scopes.add(<String, Local>{});
   }
 
   void endScope() {
+    var scope = scopes[scopes.length - 1];
+    for (var key in scope.keys) {
+      if (scope[key].state == LocalState.DEFINED) {
+        Lox.errorToken(scope[key].name, 'Variable not used.');
+      }
+    }
     scopes.removeLast();
   }
 
@@ -64,19 +78,22 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (scope.containsKey(name.lexeme)) {
       Lox.errorToken(name, 'Already a variable with this name in this scope.');
     }
-    scope[name.lexeme] = false;
+    scope[name.lexeme] = Local(name, LocalState.DECLARED);
   }
 
   // Variable defined, i.e. after initializer evaluated
   void define(Token name) {
     if (scopes.isEmpty) return;
-    scopes[scopes.length - 1][name.lexeme] = true;
+    scopes[scopes.length - 1][name.lexeme].state = LocalState.DEFINED;
   }
 
   @override
   void visitAssignExpr(Assign expr) {
     resolveExpr(expr.value);
-    resolveLocal(expr, expr.name);
+    var scope = resolveLocal(expr, expr.name);
+    if (scope != null) {
+      scope[expr.name.lexeme].state = LocalState.USED;
+    }
     return null;
   }
 
@@ -195,13 +212,20 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
 
   @override
   void visitVariableExpr(Variable expr) {
-    if (scopes.isNotEmpty &&
-        scopes[scopes.length - 1][expr.name.lexeme] == false) {
-      Lox.errorToken(
-          expr.name, "Can't read local variable in its own initializer.");
+    if (scopes.isNotEmpty) {
+      var scope = scopes[scopes.length - 1];
+      if (scope.containsKey(expr.name.lexeme)) {
+        if (scope[expr.name.lexeme].state == LocalState.DECLARED) {
+          Lox.errorToken(
+              expr.name, "Can't read local variable in its own initializer.");
+        }
+      }
     }
 
-    resolveLocal(expr, expr.name);
+    var scope = resolveLocal(expr, expr.name);
+    if (scope != null) {
+      scope[expr.name.lexeme].state = LocalState.USED;
+    }
     return null;
   }
 

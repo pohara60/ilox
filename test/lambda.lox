@@ -5,6 +5,10 @@ fun thrice(fn) {
 }
 
 var f = fun (a) {
+  var g = fun() {};
+  fun f2() {g();}
+  fun f3() {f2();}
+  f3();
   print a;
 };
 print f;
