@@ -3,20 +3,23 @@ import 'package:ilox/interpreter.dart';
 import 'package:ilox/lox_callable.dart';
 import 'package:ilox/return.dart';
 import 'package:ilox/stmt.dart';
+import 'package:ilox/token.dart';
 
 class LoxFunction implements LoxCallable {
-  final Func declaration;
+  final Token name;
+  final List<Token> parameters;
+  final List<Stmt> body;
   final Environment closure;
-  LoxFunction(this.declaration, this.closure);
+  LoxFunction(this.name, this.parameters, this.body, this.closure);
 
   @override
   Object call(Interpreter interpreter, List<Object> arguments) {
     var environment = Environment(closure);
-    for (var i = 0; i < declaration.params.length; i++) {
-      environment.define(declaration.params[i].lexeme, arguments[i]);
+    for (var i = 0; i < parameters.length; i++) {
+      environment.define(parameters[i].lexeme, arguments[i]);
     }
     try {
-      interpreter.executeBlock(declaration.body, environment);
+      interpreter.executeBlock(body, environment);
     } on ReturnException catch (returnValue) {
       return returnValue.value;
     }
@@ -25,11 +28,12 @@ class LoxFunction implements LoxCallable {
 
   @override
   int arity() {
-    return declaration.params.length;
+    return parameters.length;
   }
 
   @override
   String toString() {
-    return '<fn ${declaration.name.lexeme}>';
+    if (name == null) return '<lambda>';
+    return '<fn ${name.lexeme}>';
   }
 }

@@ -1,3 +1,4 @@
+import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 
 abstract class Expr {
@@ -13,10 +14,11 @@ abstract class ExprVisitor<T> {
   T visitUnaryExpr(Unary expr);
   T visitCallExpr(Call expr);
   T visitVariableExpr(Variable expr);
+  T visitLambdaExpr(Lambda expr);
 }
 
 class Assign extends Expr {
-  Assign (
+  Assign(
     this.name,
     this.value,
   );
@@ -30,7 +32,7 @@ class Assign extends Expr {
 }
 
 class Binary extends Expr {
-  Binary (
+  Binary(
     this.left,
     this.operator,
     this.right,
@@ -46,7 +48,7 @@ class Binary extends Expr {
 }
 
 class Logical extends Expr {
-  Logical (
+  Logical(
     this.left,
     this.operator,
     this.right,
@@ -62,7 +64,7 @@ class Logical extends Expr {
 }
 
 class Grouping extends Expr {
-  Grouping (
+  Grouping(
     this.expression,
   );
   final Expr expression;
@@ -74,7 +76,7 @@ class Grouping extends Expr {
 }
 
 class Literal extends Expr {
-  Literal (
+  Literal(
     this.value,
   );
   final Object value;
@@ -86,7 +88,7 @@ class Literal extends Expr {
 }
 
 class Unary extends Expr {
-  Unary (
+  Unary(
     this.operator,
     this.right,
   );
@@ -100,7 +102,7 @@ class Unary extends Expr {
 }
 
 class Call extends Expr {
-  Call (
+  Call(
     this.callee,
     this.paren,
     this.arguments,
@@ -116,7 +118,7 @@ class Call extends Expr {
 }
 
 class Variable extends Expr {
-  Variable (
+  Variable(
     this.name,
   );
   final Token name;
@@ -124,5 +126,19 @@ class Variable extends Expr {
   @override
   T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitVariableExpr(this);
+  }
+}
+
+class Lambda extends Expr {
+  Lambda(
+    this.params,
+    this.body,
+  );
+  final List<Token> params;
+  final List<Stmt> body;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitLambdaExpr(this);
   }
 }

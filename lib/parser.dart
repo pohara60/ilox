@@ -27,6 +27,11 @@ class Parser {
     return peek().type == type;
   }
 
+  bool check2(TokenType type) {
+    if (isAtEnd()) return false;
+    return peek2().type == type;
+  }
+
   Token advance() {
     if (!isAtEnd()) current++;
     return previous();
@@ -38,6 +43,10 @@ class Parser {
 
   Token peek() {
     return tokens[current];
+  }
+
+  Token peek2() {
+    return tokens[current + 1];
   }
 
   Token previous() {
@@ -55,7 +64,10 @@ class Parser {
   Stmt declaration() {
     try {
       if (match([TokenType.VAR])) return varDeclaration();
-      if (match([TokenType.FUN])) return function('function');
+      if (check(TokenType.FUN) && check2(TokenType.IDENTIFIER)) {
+        match([TokenType.FUN]);
+        return function('function');
+      }
       return statement();
     } on ParseError {
       synchronize();
@@ -76,6 +88,13 @@ class Parser {
   Func function(String kind) {
     var name = consume(TokenType.IDENTIFIER, 'Expect $kind name.');
     consume(TokenType.LEFT_PAREN, "Expect '(' after $kind name.");
+    var parameters = parameterList();
+    consume(TokenType.LEFT_BRACE, "Expect '{' before $kind body.");
+    var body = block();
+    return Func(name, parameters, body);
+  }
+
+  List<Token> parameterList() {
     var parameters = <Token>[];
     if (!check(TokenType.RIGHT_PAREN)) {
       do {
@@ -86,9 +105,7 @@ class Parser {
       } while (match([TokenType.COMMA]));
     }
     consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
-    consume(TokenType.LEFT_BRACE, "Expect '{' before $kind body.");
-    var body = block();
-    return Func(name, parameters, body);
+    return parameters;
   }
 
   Stmt statement() {
@@ -349,6 +366,10 @@ class Parser {
       return Variable(previous());
     }
 
+    if (match([TokenType.FUN])) {
+      return lambda();
+    }
+
     if (match([TokenType.LEFT_PAREN])) {
       var expr = expression();
       consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
@@ -356,6 +377,14 @@ class Parser {
     }
 
     throw error(peek(), 'Expect expression.');
+  }
+
+  Lambda lambda() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after fun.");
+    var parameters = parameterList();
+    consume(TokenType.LEFT_BRACE, "Expect '{' before fun body.");
+    var body = block();
+    return Lambda(parameters, body);
   }
 
   Token consume(TokenType type, String message) {

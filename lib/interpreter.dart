@@ -269,7 +269,7 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
 
   @override
   void visitFuncStmt(Func stmt) {
-    var function = LoxFunction(stmt, environment);
+    var function = LoxFunction(stmt.name, stmt.params, stmt.body, environment);
     environment.define(stmt.name.lexeme, function);
     return null;
   }
@@ -279,6 +279,12 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
     Object value;
     if (stmt.value != null) value = evaluate(stmt.value);
     throw ReturnException(value);
+  }
+
+  @override
+  Object visitLambdaExpr(Lambda expr) {
+    var function = LoxFunction(null, expr.params, expr.body, environment);
+    return function;
   }
 }
 

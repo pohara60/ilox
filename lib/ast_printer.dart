@@ -203,4 +203,9 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
   String visitReturnStmt(Return stmt) {
     return parenthesize(stmt.keyword.lexeme, stmt.value);
   }
+
+  @override
+  String visitLambdaExpr(Lambda expr) {
+    return parenthesizeFun('lambda', null, expr.params, expr.body);
+  }
 }

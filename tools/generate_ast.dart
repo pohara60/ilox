@@ -15,7 +15,8 @@ void main(List<String> args) {
     'Literal  : Object value',
     'Unary    : Token operator, Expr right',
     'Call     : Expr callee, Token paren, List<Expr> arguments',
-    'Variable : Token name'
+    'Variable : Token name',
+    'Lambda   : List<Token> params, List<Stmt> body',
   ]);
 
   defineAst(outputDir, 'Stmt', [
