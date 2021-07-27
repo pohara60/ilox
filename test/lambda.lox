@@ -14,5 +14,18 @@ thrice(f);
 fun () {};
 
 fun scope(a) {
-  var a = "local";
+  var b = "local";
 }
+
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  showA();
+  var a = "block";
+  showA();
+}
+
+//return;

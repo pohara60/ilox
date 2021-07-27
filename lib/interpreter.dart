@@ -12,12 +12,26 @@ import 'package:ilox/token_type.dart';
 class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
   final Environment globals;
   Environment environment;
+  final locals = <Expr, int>{};
   bool isBreak = false;
   bool isContinue = false;
 
   Interpreter() : globals = Environment() {
     defineBuiltins(globals);
     environment = globals;
+  }
+
+  void resolve(Expr expr, int depth) {
+    locals[expr] = depth;
+  }
+
+  Object lookUpVariable(Token name, Expr expr) {
+    var distance = locals[expr];
+    if (distance != null) {
+      return environment.getAt(distance, name.lexeme);
+    } else {
+      return globals.get(name);
+    }
   }
 
   void interpret(List<Stmt> statements) {
@@ -182,13 +196,18 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
 
   @override
   Object visitVariableExpr(Variable expr) {
-    return environment.get(expr.name);
+    return lookUpVariable(expr.name, expr);
   }
 
   @override
   Object visitAssignExpr(Assign expr) {
     var value = evaluate(expr.value);
-    environment.assign(expr.name, value);
+    var distance = locals[expr];
+    if (distance != null) {
+      environment.assignAt(distance, expr.name, value);
+    } else {
+      globals.assign(expr.name, value);
+    }
     return value;
   }
 

@@ -5,6 +5,7 @@ import 'dart:io';
 //import 'package:ilox/expr.dart';
 import 'package:ilox/interpreter.dart';
 import 'package:ilox/parser.dart';
+import 'package:ilox/resolver.dart';
 import 'package:ilox/scanner.dart';
 import 'package:ilox/token.dart';
 import 'package:ilox/token_type.dart';
@@ -40,6 +41,12 @@ class Lox {
     var statements = parser.parse();
 
     // Stop if there was a syntax error.
+    if (hadError) return;
+
+    var resolver = Resolver(interpreter);
+    resolver.resolve(statements);
+
+    // Stop if there was a semantic error.
     if (hadError) return;
 
     //print(AstPrinter().print(expression));
