@@ -64,6 +64,7 @@ class Parser {
   Stmt declaration() {
     try {
       if (match([TokenType.VAR])) return varDeclaration();
+      if (match([TokenType.CLASS])) return classDeclaration();
       if (check(TokenType.FUN) && check2(TokenType.IDENTIFIER)) {
         match([TokenType.FUN]);
         return function('function');
@@ -83,6 +84,17 @@ class Parser {
     }
     consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
     return Var(name, initializer);
+  }
+
+  Stmt classDeclaration() {
+    var name = consume(TokenType.IDENTIFIER, 'Expect class name.');
+    consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+    var methods = <Func>[];
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+      methods.add(function('method'));
+    }
+    consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+    return Class(name, methods);
   }
 
   Func function(String kind) {
@@ -243,6 +255,9 @@ class Parser {
       if (expr is Variable) {
         var name = expr.name;
         return Assign(name, value);
+      } else if (expr is Get) {
+        var get = expr;
+        return Set(get.object, get.name, value);
       }
       error(equals, 'Invalid assignment target.');
     }
@@ -328,6 +343,10 @@ class Parser {
     while (true) {
       if (match([TokenType.LEFT_PAREN])) {
         expr = finishCall(expr);
+      } else if (match([TokenType.DOT])) {
+        var name =
+            consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+        expr = Get(expr, name);
       } else {
         break;
       }
@@ -357,25 +376,17 @@ class Parser {
     if (match([TokenType.FALSE])) return Literal(false);
     if (match([TokenType.TRUE])) return Literal(true);
     if (match([TokenType.NIL])) return Literal(null);
-
     if (match([TokenType.NUMBER, TokenType.STRING])) {
       return Literal(previous().literal);
     }
-
-    if (match([TokenType.IDENTIFIER])) {
-      return Variable(previous());
-    }
-
-    if (match([TokenType.FUN])) {
-      return lambda();
-    }
-
+    if (match([TokenType.THIS])) return This(previous());
+    if (match([TokenType.IDENTIFIER])) return Variable(previous());
+    if (match([TokenType.FUN])) return lambda();
     if (match([TokenType.LEFT_PAREN])) {
       var expr = expression();
       consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
       return Grouping(expr);
     }
-
     throw error(peek(), 'Expect expression.');
   }
 

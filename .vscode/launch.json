@@ -20,6 +20,16 @@
                 "test/lambda.lox"
             ],
             "console": "terminal"
+        },
+        {
+            "name": "class",
+            "request": "launch",
+            "type": "dart",
+            "program": "bin/ilox.dart",
+            "args": [
+                "test/class.lox"
+            ],
+            "console": "terminal"
         }
     ]
 }

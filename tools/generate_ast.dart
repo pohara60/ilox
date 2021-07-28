@@ -15,6 +15,9 @@ void main(List<String> args) {
     'Literal  : Object value',
     'Unary    : Token operator, Expr right',
     'Call     : Expr callee, Token paren, List<Expr> arguments',
+    'Get      : Expr object, Token name',
+    'Set      : Expr object, Token name, Expr value',
+    'This     : Token keyword',
     'Variable : Token name',
     'Lambda   : List<Token> params, List<Stmt> body',
   ]);
@@ -30,6 +33,7 @@ void main(List<String> args) {
     'Var        : Token name, Expr initializer',
     'Func       : Token name, List<Token> params, List<Stmt> body',
     'Return     : Token keyword, Expr value',
+    'Class      : Token name, List<Func> methods',
   ]);
 }
 
@@ -38,8 +42,11 @@ void defineAst(String outputDir, String baseName, List<String> types) {
   var file = File(path);
   var output = StringBuffer();
 
-  if (baseName != 'Expr') {
+  if (baseName == 'Stmt') {
     output.writeln("import 'package:ilox/expr.dart';");
+  }
+  if (baseName == 'Expr') {
+    output.writeln("import 'package:ilox/stmt.dart';");
   }
   output.writeln("import 'package:ilox/token.dart';");
   output.writeln();
@@ -63,6 +70,7 @@ void defineType(
 
   // Constructor.
   output.writeln('  $className (');
+  //print('class=$className');
 
   // Store parameters in fields.
   var fields = fieldList.split(', ');

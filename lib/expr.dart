@@ -13,12 +13,15 @@ abstract class ExprVisitor<T> {
   T visitLiteralExpr(Literal expr);
   T visitUnaryExpr(Unary expr);
   T visitCallExpr(Call expr);
+  T visitGetExpr(Get expr);
+  T visitSetExpr(Set expr);
+  T visitThisExpr(This expr);
   T visitVariableExpr(Variable expr);
   T visitLambdaExpr(Lambda expr);
 }
 
 class Assign extends Expr {
-  Assign(
+  Assign (
     this.name,
     this.value,
   );
@@ -32,7 +35,7 @@ class Assign extends Expr {
 }
 
 class Binary extends Expr {
-  Binary(
+  Binary (
     this.left,
     this.operator,
     this.right,
@@ -48,7 +51,7 @@ class Binary extends Expr {
 }
 
 class Logical extends Expr {
-  Logical(
+  Logical (
     this.left,
     this.operator,
     this.right,
@@ -64,7 +67,7 @@ class Logical extends Expr {
 }
 
 class Grouping extends Expr {
-  Grouping(
+  Grouping (
     this.expression,
   );
   final Expr expression;
@@ -76,7 +79,7 @@ class Grouping extends Expr {
 }
 
 class Literal extends Expr {
-  Literal(
+  Literal (
     this.value,
   );
   final Object value;
@@ -88,7 +91,7 @@ class Literal extends Expr {
 }
 
 class Unary extends Expr {
-  Unary(
+  Unary (
     this.operator,
     this.right,
   );
@@ -102,7 +105,7 @@ class Unary extends Expr {
 }
 
 class Call extends Expr {
-  Call(
+  Call (
     this.callee,
     this.paren,
     this.arguments,
@@ -117,8 +120,50 @@ class Call extends Expr {
   }
 }
 
+class Get extends Expr {
+  Get (
+    this.object,
+    this.name,
+  );
+  final Expr object;
+  final Token name;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitGetExpr(this);
+  }
+}
+
+class Set extends Expr {
+  Set (
+    this.object,
+    this.name,
+    this.value,
+  );
+  final Expr object;
+  final Token name;
+  final Expr value;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitSetExpr(this);
+  }
+}
+
+class This extends Expr {
+  This (
+    this.keyword,
+  );
+  final Token keyword;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitThisExpr(this);
+  }
+}
+
 class Variable extends Expr {
-  Variable(
+  Variable (
     this.name,
   );
   final Token name;
@@ -130,7 +175,7 @@ class Variable extends Expr {
 }
 
 class Lambda extends Expr {
-  Lambda(
+  Lambda (
     this.params,
     this.body,
   );

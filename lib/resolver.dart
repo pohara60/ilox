@@ -4,7 +4,9 @@ import 'package:ilox/interpreter.dart';
 import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
 
-enum FunctionType { NONE, FUNCTION }
+enum FunctionType { NONE, FUNCTION, METHOD, INITIALIZER }
+enum ClassType { NONE, CLASS }
+
 enum LocalState { DEFINED, DECLARED, USED }
 
 class Local {
@@ -17,6 +19,7 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   final Interpreter interpreter;
   final scopes = <Map<String, Local>>[];
   FunctionType currentFunction = FunctionType.NONE;
+  ClassType currentClass = ClassType.NONE;
 
   Resolver(this.interpreter);
 
@@ -62,7 +65,7 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   }
 
   void endScope() {
-    var scope = scopes[scopes.length - 1];
+    var scope = scopes.last;
     for (var key in scope.keys) {
       if (scope[key].state == LocalState.DEFINED) {
         Lox.errorToken(scope[key].name, 'Variable not used.');
@@ -74,7 +77,7 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   // Variable declared
   void declare(Token name) {
     if (scopes.isEmpty) return;
-    var scope = scopes[scopes.length - 1];
+    var scope = scopes.last;
     if (scope.containsKey(name.lexeme)) {
       Lox.errorToken(name, 'Already a variable with this name in this scope.');
     }
@@ -84,7 +87,7 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   // Variable defined, i.e. after initializer evaluated
   void define(Token name) {
     if (scopes.isEmpty) return;
-    scopes[scopes.length - 1][name.lexeme].state = LocalState.DEFINED;
+    scopes.last[name.lexeme].state = LocalState.DEFINED;
   }
 
   @override
@@ -94,14 +97,12 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (scope != null) {
       scope[expr.name.lexeme].state = LocalState.USED;
     }
-    return null;
   }
 
   @override
   void visitBinaryExpr(Binary expr) {
     resolveExpr(expr.left);
     resolveExpr(expr.right);
-    return null;
   }
 
   @override
@@ -109,13 +110,10 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     beginScope();
     resolve(stmt.statements);
     endScope();
-    return null;
   }
 
   @override
-  void visitBreakStmt(Break stmt) {
-    return null;
-  }
+  void visitBreakStmt(Break stmt) {}
 
   @override
   void visitCallExpr(Call expr) {
@@ -123,18 +121,14 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     for (var argument in expr.arguments) {
       resolveExpr(argument);
     }
-    return null;
   }
 
   @override
-  void visitContinueStmt(Continue stmt) {
-    return null;
-  }
+  void visitContinueStmt(Continue stmt) {}
 
   @override
   void visitExpressionStmt(Expression stmt) {
     resolveExpr(stmt.expression);
-    return null;
   }
 
   @override
@@ -142,13 +136,11 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     declare(stmt.name);
     define(stmt.name);
     resolveFunction(stmt.params, stmt.body, FunctionType.FUNCTION);
-    return null;
   }
 
   @override
   void visitGroupingExpr(Grouping expr) {
     resolveExpr(expr.expression);
-    return null;
   }
 
   @override
@@ -156,31 +148,25 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     resolveExpr(stmt.condition);
     resolveStmt(stmt.thenBranch);
     if (stmt.elseBranch != null) resolveStmt(stmt.elseBranch);
-    return null;
   }
 
   @override
   void visitLambdaExpr(Lambda expr) {
     resolveFunction(expr.params, expr.body, FunctionType.FUNCTION);
-    return null;
   }
 
   @override
-  void visitLiteralExpr(Literal expr) {
-    return null;
-  }
+  void visitLiteralExpr(Literal expr) {}
 
   @override
   void visitLogicalExpr(Logical expr) {
     resolveExpr(expr.left);
     resolveExpr(expr.right);
-    return null;
   }
 
   @override
   void visitPrintStmt(Print stmt) {
     resolveExpr(stmt.expression);
-    return null;
   }
 
   @override
@@ -189,15 +175,17 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
       Lox.errorToken(stmt.keyword, "Can't return from top-level code.");
     }
     if (stmt.value != null) {
+      if (currentFunction == FunctionType.INITIALIZER) {
+        Lox.errorToken(
+            stmt.keyword, "Can't return a value from an initializer.");
+      }
       resolveExpr(stmt.value);
     }
-    return null;
   }
 
   @override
   void visitUnaryExpr(Unary expr) {
     resolveExpr(expr.right);
-    return null;
   }
 
   @override
@@ -207,13 +195,12 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
       resolveExpr(stmt.initializer);
     }
     define(stmt.name);
-    return null;
   }
 
   @override
   void visitVariableExpr(Variable expr) {
     if (scopes.isNotEmpty) {
-      var scope = scopes[scopes.length - 1];
+      var scope = scopes.last;
       if (scope.containsKey(expr.name.lexeme)) {
         if (scope[expr.name.lexeme].state == LocalState.DECLARED) {
           Lox.errorToken(
@@ -226,13 +213,53 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (scope != null) {
       scope[expr.name.lexeme].state = LocalState.USED;
     }
-    return null;
   }
 
   @override
   void visitWhileStmt(While stmt) {
     resolveExpr(stmt.condition);
     resolveStmt(stmt.body);
-    return null;
+  }
+
+  @override
+  void visitClassStmt(Class stmt) {
+    var enclosingClass = currentClass;
+    currentClass = ClassType.CLASS;
+    declare(stmt.name);
+    define(stmt.name);
+    // Create scope to define 'this' for closure
+    beginScope();
+    scopes.last['this'] = Local(stmt.name, LocalState.USED);
+    for (var method in stmt.methods) {
+      var declaration = FunctionType.METHOD;
+      if (method.name.lexeme == 'init') {
+        declaration = FunctionType.INITIALIZER;
+      }
+      resolveFunction(method.params, method.body, declaration);
+    }
+    endScope();
+    currentClass = enclosingClass;
+  }
+
+  @override
+  void visitGetExpr(Get expr) {
+    resolveExpr(expr.object);
+    // Properties are resolved dynamically by the interpreter
+  }
+
+  @override
+  void visitSetExpr(Set expr) {
+    resolveExpr(expr.value);
+    resolveExpr(expr.object);
+    // Properties are resolved dynamically by the interpreter
+  }
+
+  @override
+  void visitThisExpr(This expr) {
+    if (currentClass == ClassType.NONE) {
+      Lox.errorToken(expr.keyword, "Can't use 'this' outside of a class.");
+      return;
+    }
+    resolveLocal(expr, expr.keyword);
   }
 }

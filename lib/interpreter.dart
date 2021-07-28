@@ -3,7 +3,9 @@ import 'package:ilox/expr.dart';
 import 'package:ilox/environment.dart';
 import 'package:ilox/ilox.dart';
 import 'package:ilox/lox_callable.dart';
+import 'package:ilox/lox_class.dart';
 import 'package:ilox/lox_function.dart';
+import 'package:ilox/lox_instance.dart';
 import 'package:ilox/return.dart';
 import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
@@ -191,7 +193,6 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
       value = evaluate(stmt.initializer);
     }
     environment.define(stmt.name.lexeme, value);
-    return null;
   }
 
   @override
@@ -288,9 +289,9 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
 
   @override
   void visitFuncStmt(Func stmt) {
-    var function = LoxFunction(stmt.name, stmt.params, stmt.body, environment);
+    var function =
+        LoxFunction(stmt.name, stmt.params, stmt.body, environment, false);
     environment.define(stmt.name.lexeme, function);
-    return null;
   }
 
   @override
@@ -302,8 +303,47 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
 
   @override
   Object visitLambdaExpr(Lambda expr) {
-    var function = LoxFunction(null, expr.params, expr.body, environment);
+    var function =
+        LoxFunction(null, expr.params, expr.body, environment, false);
     return function;
+  }
+
+  @override
+  void visitClassStmt(Class stmt) {
+    environment.define(stmt.name.lexeme, null);
+    var methods = <String, LoxFunction>{};
+    for (var method in stmt.methods) {
+      var function = LoxFunction(method.name, method.params, method.body,
+          environment, method.name.lexeme == 'init');
+      methods[method.name.lexeme] = function;
+    }
+    var klass = LoxClass(stmt.name.lexeme, methods);
+    environment.assign(stmt.name, klass);
+  }
+
+  @override
+  Object visitGetExpr(Get expr) {
+    var object = evaluate(expr.object);
+    if (object is LoxInstance) {
+      return object.get(expr.name);
+    }
+    throw RuntimeError(expr.name, 'Only instances have properties.');
+  }
+
+  @override
+  Object visitSetExpr(Set expr) {
+    var object = evaluate(expr.object);
+    if (object is! LoxInstance) {
+      throw RuntimeError(expr.name, 'Only instances have fields.');
+    }
+    var value = evaluate(expr.value);
+    (object as LoxInstance).set(expr.name, value);
+    return value;
+  }
+
+  @override
+  Object visitThisExpr(This expr) {
+    return lookUpVariable(expr.keyword, expr);
   }
 }
 

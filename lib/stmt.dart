@@ -16,6 +16,7 @@ abstract class StmtVisitor<T> {
   T visitVarStmt(Var stmt);
   T visitFuncStmt(Func stmt);
   T visitReturnStmt(Return stmt);
+  T visitClassStmt(Class stmt);
 }
 
 class Block extends Stmt {
@@ -145,5 +146,19 @@ class Return extends Stmt {
   @override
   T accept<T>(StmtVisitor<T> visitor) {
     return visitor.visitReturnStmt(this);
+  }
+}
+
+class Class extends Stmt {
+  Class (
+    this.name,
+    this.methods,
+  );
+  final Token name;
+  final List<Func> methods;
+
+  @override
+  T accept<T>(StmtVisitor<T> visitor) {
+    return visitor.visitClassStmt(this);
   }
 }

@@ -62,6 +62,24 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     return buffer.toString();
   }
 
+  String parenthesizeGet(String name, Expr object, Token token, [Expr value]) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(object.accept(this));
+    buffer.write('.');
+    buffer.write(token.lexeme);
+    if (value != null) {
+      buffer.write(' ');
+      buffer.write(value.accept(this));
+    }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
   String parenthesizeFun(
       String name, Token token, List<Token> params, List<Stmt> body) {
     var buffer = StringBuffer();
@@ -78,6 +96,23 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     buffer.write(' ) ');
     parenthesizeStmts('body', body);
     buffer.write(')');
+
+    return buffer.toString();
+  }
+
+  String parenthesizeClass(String name, Token token, List<Func> methods) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(token.lexeme);
+    buffer.write(' (');
+    for (var method in methods) {
+      buffer.write(' ');
+      parenthesizeFun('method', method.name, method.params, method.body);
+    }
+    buffer.write(' ) ');
 
     return buffer.toString();
   }
@@ -207,5 +242,25 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
   @override
   String visitLambdaExpr(Lambda expr) {
     return parenthesizeFun('lambda', null, expr.params, expr.body);
+  }
+
+  @override
+  String visitClassStmt(Class stmt) {
+    return parenthesizeClass('class', stmt.name, stmt.methods);
+  }
+
+  @override
+  String visitGetExpr(Get expr) {
+    return parenthesizeGet('get', expr.object, expr.name);
+  }
+
+  @override
+  String visitSetExpr(Set expr) {
+    return parenthesizeGet('set', expr.object, expr.name, expr.value);
+  }
+
+  @override
+  String visitThisExpr(This expr) {
+    return parenthesizeVar('var', expr.keyword);
   }
 }

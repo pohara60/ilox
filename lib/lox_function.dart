@@ -1,6 +1,7 @@
 import 'package:ilox/environment.dart';
 import 'package:ilox/interpreter.dart';
 import 'package:ilox/lox_callable.dart';
+import 'package:ilox/lox_instance.dart';
 import 'package:ilox/return.dart';
 import 'package:ilox/stmt.dart';
 import 'package:ilox/token.dart';
@@ -10,7 +11,9 @@ class LoxFunction implements LoxCallable {
   final List<Token> parameters;
   final List<Stmt> body;
   final Environment closure;
-  LoxFunction(this.name, this.parameters, this.body, this.closure);
+  final bool isInitializer;
+  LoxFunction(
+      this.name, this.parameters, this.body, this.closure, this.isInitializer);
 
   @override
   Object call(Interpreter interpreter, List<Object> arguments) {
@@ -21,9 +24,17 @@ class LoxFunction implements LoxCallable {
     try {
       interpreter.executeBlock(body, environment);
     } on ReturnException catch (returnValue) {
+      if (isInitializer) return closure.getAt(0, 'this');
       return returnValue.value;
     }
+    if (isInitializer) return closure.getAt(0, 'this');
     return null;
+  }
+
+  LoxFunction bind(LoxInstance instance) {
+    var environment = Environment(closure);
+    environment.define('this', instance);
+    return LoxFunction(name, parameters, body, environment, isInitializer);
   }
 
   @override

@@ -1,0 +1,46 @@
+class DevonshireCream {
+  serveOn() {
+    return "Scones";
+  }
+}
+print DevonshireCream; 
+
+class Bagel {
+  eat() {
+    print "Chew chew chew!";
+  }
+}
+var bagel = Bagel();
+print bagel; 
+bagel.topping = "Seeds";
+print bagel.topping;
+bagel.eat();
+
+class Cake {
+  taste() {
+    var adjective = "delicious";
+    print "The " + this.flavor + " cake is " + adjective + "!";
+  }
+}
+
+var cake = Cake();
+cake.flavor = "German chocolate";
+cake.taste(); // Prints "The German chocolate cake is delicious!".
+
+class Person {
+  init(name) {
+    this.name = name;
+  }
+  greet() {
+    print "Hello "+this.name;
+  }
+}
+var me = Person("Patrick");
+me.greet();
+print me;
+print me.greet;
+print me.name;
+print me.init;
+var you = me;
+print you.init("Joe");
+print you.name + " or " + me.name;
