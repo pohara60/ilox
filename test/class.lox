@@ -35,7 +35,16 @@ class Person {
     print "Hello "+this.name;
   }
 }
-var me = Person("Patrick");
+class Man < Person {
+  init(name) {
+    super.init(name);
+  }
+  greet() {
+    print "Man...";
+    super.greet();
+  }
+}
+var me = Man("Patrick");
 me.greet();
 print me;
 print me.greet;

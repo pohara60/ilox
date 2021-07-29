@@ -152,9 +152,11 @@ class Return extends Stmt {
 class Class extends Stmt {
   Class (
     this.name,
+    this.superclass,
     this.methods,
   );
   final Token name;
+  final Variable superclass;
   final List<Func> methods;
 
   @override

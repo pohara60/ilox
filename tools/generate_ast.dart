@@ -17,6 +17,7 @@ void main(List<String> args) {
     'Call     : Expr callee, Token paren, List<Expr> arguments',
     'Get      : Expr object, Token name',
     'Set      : Expr object, Token name, Expr value',
+    'Super    : Token keyword, Token method',
     'This     : Token keyword',
     'Variable : Token name',
     'Lambda   : List<Token> params, List<Stmt> body',
@@ -33,7 +34,7 @@ void main(List<String> args) {
     'Var        : Token name, Expr initializer',
     'Func       : Token name, List<Token> params, List<Stmt> body',
     'Return     : Token keyword, Expr value',
-    'Class      : Token name, List<Func> methods',
+    'Class      : Token name, Variable superclass, List<Func> methods',
   ]);
 }
 

@@ -62,6 +62,22 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     return buffer.toString();
   }
 
+  String parenthesizeClassRef(String name, Token keyword, [Token method]) {
+    var buffer = StringBuffer();
+
+    buffer.write('(');
+    buffer.write(name);
+    buffer.write(' ');
+    buffer.write(keyword.lexeme);
+    if (method != null) {
+      buffer.write(' ');
+      buffer.write(method.lexeme);
+    }
+    buffer.write(')');
+
+    return buffer.toString();
+  }
+
   String parenthesizeGet(String name, Expr object, Token token, [Expr value]) {
     var buffer = StringBuffer();
 
@@ -100,12 +116,17 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
     return buffer.toString();
   }
 
-  String parenthesizeClass(String name, Token token, List<Func> methods) {
+  String parenthesizeClass(
+      String name, Token token, Variable superclass, List<Func> methods) {
     var buffer = StringBuffer();
 
     buffer.write('(');
     buffer.write(name);
     buffer.write(' ');
+    if (superclass != null) {
+      buffer.write(superclass.accept(this));
+      buffer.write(' ');
+    }
     buffer.write(token.lexeme);
     buffer.write(' (');
     for (var method in methods) {
@@ -246,7 +267,7 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
 
   @override
   String visitClassStmt(Class stmt) {
-    return parenthesizeClass('class', stmt.name, stmt.methods);
+    return parenthesizeClass('class', stmt.name, stmt.superclass, stmt.methods);
   }
 
   @override
@@ -261,6 +282,11 @@ class AstPrinter implements ExprVisitor<String>, StmtVisitor<String> {
 
   @override
   String visitThisExpr(This expr) {
-    return parenthesizeVar('var', expr.keyword);
+    return parenthesizeClassRef('var', expr.keyword);
+  }
+
+  @override
+  String visitSuperExpr(Super expr) {
+    return parenthesizeClassRef('var', expr.keyword, expr.method);
   }
 }

@@ -15,6 +15,7 @@ abstract class ExprVisitor<T> {
   T visitCallExpr(Call expr);
   T visitGetExpr(Get expr);
   T visitSetExpr(Set expr);
+  T visitSuperExpr(Super expr);
   T visitThisExpr(This expr);
   T visitVariableExpr(Variable expr);
   T visitLambdaExpr(Lambda expr);
@@ -147,6 +148,20 @@ class Set extends Expr {
   @override
   T accept<T>(ExprVisitor<T> visitor) {
     return visitor.visitSetExpr(this);
+  }
+}
+
+class Super extends Expr {
+  Super (
+    this.keyword,
+    this.method,
+  );
+  final Token keyword;
+  final Token method;
+
+  @override
+  T accept<T>(ExprVisitor<T> visitor) {
+    return visitor.visitSuperExpr(this);
   }
 }
 

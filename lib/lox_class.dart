@@ -5,8 +5,9 @@ import 'package:ilox/lox_instance.dart';
 
 class LoxClass implements LoxCallable {
   final String name;
+  final LoxClass superclass;
   final Map<String, LoxFunction> methods;
-  LoxClass(this.name, this.methods);
+  LoxClass(this.name, this.superclass, this.methods);
 
   @override
   String toString() {
@@ -33,6 +34,9 @@ class LoxClass implements LoxCallable {
   LoxFunction findMethod(String name) {
     if (methods.containsKey(name)) {
       return methods[name];
+    }
+    if (superclass != null) {
+      return superclass.findMethod(name);
     }
     return null;
   }
