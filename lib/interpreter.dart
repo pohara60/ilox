@@ -329,7 +329,14 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
           environment, method.name.lexeme == 'init');
       methods[method.name.lexeme] = function;
     }
-    var klass = LoxClass(stmt.name.lexeme, (superclass as LoxClass), methods);
+    var functions = <String, LoxFunction>{};
+    for (var function in stmt.functions) {
+      var func = LoxFunction(
+          function.name, function.params, function.body, environment, false);
+      functions[function.name.lexeme] = func;
+    }
+    var klass = LoxClass(
+        stmt.name.lexeme, (superclass as LoxClass), methods, functions);
     if (superclass != null) {
       environment = environment.enclosing;
     }
@@ -342,7 +349,12 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<void> {
     if (object is LoxInstance) {
       return object.get(expr.name);
     }
-    throw RuntimeError(expr.name, 'Only instances have properties.');
+    if (object is LoxClass) {
+      return object.get(expr.name);
+    }
+
+    throw RuntimeError(
+        expr.name, 'Only instances and classes have properties.');
   }
 
   @override

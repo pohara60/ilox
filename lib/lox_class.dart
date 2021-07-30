@@ -2,12 +2,14 @@ import 'package:ilox/interpreter.dart';
 import 'package:ilox/lox_callable.dart';
 import 'package:ilox/lox_function.dart';
 import 'package:ilox/lox_instance.dart';
+import 'package:ilox/token.dart';
 
 class LoxClass implements LoxCallable {
   final String name;
   final LoxClass superclass;
   final Map<String, LoxFunction> methods;
-  LoxClass(this.name, this.superclass, this.methods);
+  final Map<String, LoxFunction> functions;
+  LoxClass(this.name, this.superclass, this.methods, this.functions);
 
   @override
   String toString() {
@@ -37,6 +39,22 @@ class LoxClass implements LoxCallable {
     }
     if (superclass != null) {
       return superclass.findMethod(name);
+    }
+    return null;
+  }
+
+  Object get(Token name) {
+    var method = findFunction(name.lexeme);
+    if (method != null) return method.bind(null);
+    throw RuntimeError(name, "Undefined function '${name.lexeme}'.");
+  }
+
+  LoxFunction findFunction(String name) {
+    if (functions.containsKey(name)) {
+      return functions[name];
+    }
+    if (superclass != null) {
+      return superclass.findFunction(name);
     }
     return null;
   }

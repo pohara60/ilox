@@ -251,6 +251,10 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
       }
       resolveFunction(method.params, method.body, declaration);
     }
+    for (var function in stmt.functions) {
+      var declaration = FunctionType.FUNCTION;
+      resolveFunction(function.params, function.body, declaration);
+    }
     endScope();
     if (stmt.superclass != null) endScope();
     currentClass = enclosingClass;
@@ -273,6 +277,10 @@ class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   void visitThisExpr(This expr) {
     if (currentClass == ClassType.NONE) {
       Lox.errorToken(expr.keyword, "Can't use 'this' outside of a class.");
+      return;
+    }
+    if (currentFunction == FunctionType.FUNCTION) {
+      Lox.errorToken(expr.keyword, "Can't use 'this' in static method.");
       return;
     }
     resolveLocal(expr, expr.keyword);

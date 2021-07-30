@@ -95,11 +95,16 @@ class Parser {
     }
     consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
     var methods = <Func>[];
+    var functions = <Func>[];
     while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+      if (match([TokenType.FUN])) {
+        functions.add(function('function'));
+        continue;
+      }
       methods.add(function('method'));
     }
     consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
-    return Class(name, superclass, methods);
+    return Class(name, superclass, methods, functions);
   }
 
   Func function(String kind) {

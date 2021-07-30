@@ -30,6 +30,16 @@
                 "test/class.lox"
             ],
             "console": "terminal"
+        },
+        {
+            "name": "static",
+            "request": "launch",
+            "type": "dart",
+            "program": "bin/ilox.dart",
+            "args": [
+                "test/static.lox"
+            ],
+            "console": "terminal"
         }
     ]
 }

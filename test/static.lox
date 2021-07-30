@@ -1,0 +1,22 @@
+class X {
+    fun s1(){print"s1";}
+    m(){print"m";}
+    m1(){
+        print"m1";
+        this.m();
+        X.s1();
+    }
+}
+var x = X();
+x.m1();
+X.s1();
+
+class Y {
+    fun s1(){print"s1";}
+    m1(){
+        //s1();
+    }
+}
+var y = Y();
+//y.s1();
+Y.s1();

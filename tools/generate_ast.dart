@@ -34,7 +34,7 @@ void main(List<String> args) {
     'Var        : Token name, Expr initializer',
     'Func       : Token name, List<Token> params, List<Stmt> body',
     'Return     : Token keyword, Expr value',
-    'Class      : Token name, Variable superclass, List<Func> methods',
+    'Class      : Token name, Variable superclass, List<Func> methods, List<Func> functions',
   ]);
 }
 

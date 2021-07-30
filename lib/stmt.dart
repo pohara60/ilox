@@ -154,10 +154,12 @@ class Class extends Stmt {
     this.name,
     this.superclass,
     this.methods,
+    this.functions,
   );
   final Token name;
   final Variable superclass;
   final List<Func> methods;
+  final List<Func> functions;
 
   @override
   T accept<T>(StmtVisitor<T> visitor) {
