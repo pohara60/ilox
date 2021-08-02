@@ -1,5 +1,6 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+A `Dart` implementation of the Lox Interpreter described in [craftinginterpreters](https://craftinginterpreters.com/).
 
-Created from templates made available by Stagehand under a BSD-style
-[license](https://github.com/dart-lang/stagehand/blob/master/LICENSE).
+Includes some extensions to Lox, including:
+- Added `break` and `continue` statements
+- Lambda Functions
+- Static Class methods, declared with `fun` keyword, invoked with `Class.` prefix
